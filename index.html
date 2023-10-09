@@ -1,13 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-<title>Nukool Limrat</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nukool Limrat</title>
+    <style>
+        body {
+            margin: 0; /* Remove default margin to make video fill the entire viewport */
+            overflow: hidden; /* Hide any overflow content */
+        }
+
+        video {
+            position: fixed; /* Fixed position to cover the entire viewport */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensure the video covers the entire area without distortion */
+            z-index: -1; /* Place the video behind other content */
+        }
+
+        /* Add any other styles you need for your webpage here */
+
+    </style>
 </head>
+
 <body>
-
-<h1>Hi !!</h1>
-  
-<p>The best code is no code at all..</p>
-
+    <video autoplay loop muted>
+        <source src="bg.mp4" type="video/mp4" alt="Cover designed by Freepik">
+        <!-- Add additional source elements for different video formats if needed -->
+    </video>
+    <div>
+        <!-- Your webpage content goes here -->
+    </div>
 </body>
+
 </html>
