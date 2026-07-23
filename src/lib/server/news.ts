@@ -3,7 +3,7 @@
 // with a `topic` used for the filter buttons on the News page. No API keys needed anywhere.
 import Parser from 'rss-parser';
 
-export type Topic = 'geopolitics' | 'economy' | 'tech' | 'climate';
+export type Topic = 'geopolitics' | 'economy' | 'tech' | 'climate' | 'thailand';
 
 export type NewsItem = {
 	source: string;
@@ -58,14 +58,29 @@ const RSS_FEEDS: { name: string; url: string; topic: Topic }[] = [
 		name: 'The Guardian Environment',
 		url: 'https://www.theguardian.com/environment/rss',
 		topic: 'climate'
-	}
+	},
+
+	// Thailand
+	{
+		name: 'Bangkok Post',
+		url: 'https://www.bangkokpost.com/rss/data/thailand.xml',
+		topic: 'thailand'
+	},
+	{
+		name: 'Bangkok Post Business',
+		url: 'https://www.bangkokpost.com/rss/data/business.xml',
+		topic: 'thailand'
+	},
+	{ name: 'Khaosod English', url: 'https://www.khaosodenglish.com/feed/', topic: 'thailand' },
+	{ name: 'Matichon', url: 'https://www.matichon.co.th/feed', topic: 'thailand' }
 ];
 
 const REDDIT_SOURCES: { subreddit: string; topic: Topic }[] = [
 	{ subreddit: 'worldnews', topic: 'geopolitics' },
 	{ subreddit: 'economics', topic: 'economy' },
 	{ subreddit: 'technology', topic: 'tech' },
-	{ subreddit: 'environment', topic: 'climate' }
+	{ subreddit: 'environment', topic: 'climate' },
+	{ subreddit: 'Thailand', topic: 'thailand' }
 ];
 
 const parser = new Parser();
