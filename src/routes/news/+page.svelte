@@ -8,7 +8,7 @@
 	import { PUBLIC_API_BASE } from '$env/static/public';
 	import { onMount } from 'svelte';
 
-	type Topic = 'geopolitics' | 'economy' | 'tech' | 'climate' | 'thailand';
+	type Topic = 'geopolitics' | 'economy' | 'tech' | 'climate' | 'thailand' | 'dev';
 
 	type NewsItem = {
 		source: string;
@@ -25,6 +25,7 @@
 		{ value: 'geopolitics', label: 'Geopolitics' },
 		{ value: 'economy', label: 'Economy' },
 		{ value: 'tech', label: 'Tech' },
+		{ value: 'dev', label: 'IT/Dev' },
 		{ value: 'climate', label: 'Climate' }
 	];
 

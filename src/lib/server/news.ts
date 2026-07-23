@@ -3,7 +3,7 @@
 // with a `topic` used for the filter buttons on the News page. No API keys needed anywhere.
 import Parser from 'rss-parser';
 
-export type Topic = 'geopolitics' | 'economy' | 'tech' | 'climate' | 'thailand';
+export type Topic = 'geopolitics' | 'economy' | 'tech' | 'climate' | 'thailand' | 'dev';
 
 export type NewsItem = {
 	source: string;
@@ -48,6 +48,13 @@ const RSS_FEEDS: { name: string; url: string; topic: Topic }[] = [
 	},
 	{ name: 'Ars Technica', url: 'https://feeds.arstechnica.com/arstechnica/index', topic: 'tech' },
 
+	// IT / dev community (separate from general "tech" news above)
+	{ name: 'DEV Community', url: 'https://dev.to/feed', topic: 'dev' },
+	{ name: 'GitHub Blog', url: 'https://github.blog/feed/', topic: 'dev' },
+	{ name: 'Stack Overflow Blog', url: 'https://stackoverflow.blog/feed/', topic: 'dev' },
+	{ name: 'InfoQ', url: 'https://www.infoq.com/feed', topic: 'dev' },
+	{ name: 'Smashing Magazine', url: 'https://www.smashingmagazine.com/feed/', topic: 'dev' },
+
 	// Climate / environment
 	{
 		name: 'BBC Science & Environment',
@@ -80,7 +87,9 @@ const REDDIT_SOURCES: { subreddit: string; topic: Topic }[] = [
 	{ subreddit: 'economics', topic: 'economy' },
 	{ subreddit: 'technology', topic: 'tech' },
 	{ subreddit: 'environment', topic: 'climate' },
-	{ subreddit: 'Thailand', topic: 'thailand' }
+	{ subreddit: 'Thailand', topic: 'thailand' },
+	{ subreddit: 'programming', topic: 'dev' },
+	{ subreddit: 'webdev', topic: 'dev' }
 ];
 
 const parser = new Parser();
@@ -153,7 +162,7 @@ async function fetchHackerNews(): Promise<NewsItem[]> {
 					url: item.url ?? `https://news.ycombinator.com/item?id=${id}`,
 					publishedAt: new Date(item.time * 1000).toISOString(),
 					category: 'hackernews',
-					topic: 'tech'
+					topic: 'dev'
 				} satisfies NewsItem;
 			})
 		);
