@@ -1,0 +1,60 @@
+name: Deploy static site to GitHub Pages
+
+# Builds the SvelteKit app in static mode (BUILD_TARGET=static) and publishes it to
+# GitHub Pages. This does NOT touch the Vercel deployment — that redeploys on its own
+# whenever Vercel's own GitHub integration sees a push (set up separately in the Vercel
+# dashboard, Root Directory left at "/").
+#
+# One-time manual step needed: in this repo's Settings -> Pages, set "Source" to
+# "GitHub Actions" (it currently defaults to "Deploy from a branch").
+#
+# Optional: set a repository variable named PUBLIC_API_BASE (Settings -> Secrets and
+# variables -> Actions -> Variables) to your Vercel app's /api/news URL once it exists,
+# e.g. https://your-app.vercel.app/api/news. Until then the News page will just fail
+# to load news (everything else works fine).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+        env:
+          BUILD_TARGET: static
+          PUBLIC_API_BASE: ${{ vars.PUBLIC_API_BASE }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
