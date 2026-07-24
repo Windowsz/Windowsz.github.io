@@ -20,3 +20,9 @@ body {
 	margin: 0;
 	min-height: 100vh;
 }
+
+/* Browsers default <button> to a plain arrow cursor (only <a> gets pointer by
+   default) — every clickable button on the site should read as clickable. */
+button:not(:disabled) {
+	cursor: pointer;
+}

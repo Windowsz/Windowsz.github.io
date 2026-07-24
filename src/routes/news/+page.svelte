@@ -253,6 +253,11 @@
 <dialog
 	bind:this={dialogEl}
 	onclose={() => (activeItem = null)}
+	onclick={(e) => {
+		// A click that lands on the <dialog> element itself (not anything inside it)
+		// is a click on the backdrop — close, the same way most modals behave.
+		if (e.target === dialogEl) dialogEl.close();
+	}}
 	class="m-auto w-full max-w-xl rounded-xl border border-white/10 bg-neutral-900/70 p-0 text-white shadow-2xl backdrop-blur-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
 >
 	{#if activeItem}

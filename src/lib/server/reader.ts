@@ -2,9 +2,15 @@
 // Fetches a news article's raw HTML, runs Mozilla's Readability parser (the same
 // one behind Firefox Reader View) to pull out the article body, then sanitizes
 // the resulting HTML before it's ever rendered client-side with {@html}.
+//
+// Uses linkedom (not jsdom) and sanitize-html (not DOMPurify+jsdom) deliberately —
+// jsdom is notoriously unreliable to bundle for serverless/edge functions (heavy,
+// dynamic requires, native-ish optional deps) and caused 500s once actually
+// deployed to Vercel despite working fine in local dev. Both replacements are
+// pure JS with no such baggage.
 import { Readability } from '@mozilla/readability';
-import { JSDOM } from 'jsdom';
-import DOMPurify from 'isomorphic-dompurify';
+import { parseHTML } from 'linkedom';
+import sanitizeHtml from 'sanitize-html';
 
 const FETCH_TIMEOUT_MS = 8000;
 
@@ -20,6 +26,16 @@ export type ReaderArticle = {
 const USER_AGENT =
 	'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
+// Readability resolves relative image/link URLs via document.baseURI, which
+// linkedom only derives from a <base> element (it has no notion of "the URL
+// this HTML was fetched from" otherwise) — so inject one ourselves.
+function withBaseHref(html: string, url: string): string {
+	const baseTag = `<base href="${url}">`;
+	if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (tag) => `${tag}${baseTag}`);
+	if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, (tag) => `${tag}${baseTag}`);
+	return baseTag + html;
+}
+
 export async function extractArticle(url: string): Promise<ReaderArticle> {
 	const res = await fetch(url, {
 		headers: { 'User-Agent': USER_AGENT },
@@ -28,8 +44,8 @@ export async function extractArticle(url: string): Promise<ReaderArticle> {
 	if (!res.ok) throw new Error(`Fetch failed with ${res.status}`);
 
 	const html = await res.text();
-	const dom = new JSDOM(html, { url });
-	const article = new Readability(dom.window.document).parse();
+	const { document } = parseHTML(withBaseHref(html, url));
+	const article = new Readability(document as unknown as Document).parse();
 
 	if (!article?.content) throw new Error('Readability could not extract article content');
 
@@ -37,8 +53,8 @@ export async function extractArticle(url: string): Promise<ReaderArticle> {
 		title: article.title ?? '',
 		byline: article.byline ?? null,
 		siteName: article.siteName ?? null,
-		contentHtml: DOMPurify.sanitize(article.content, {
-			ALLOWED_TAGS: [
+		contentHtml: sanitizeHtml(article.content, {
+			allowedTags: [
 				'p',
 				'br',
 				'a',
@@ -61,7 +77,10 @@ export async function extractArticle(url: string): Promise<ReaderArticle> {
 				'pre',
 				'code'
 			],
-			ALLOWED_ATTR: ['href', 'src', 'alt', 'title']
+			allowedAttributes: {
+				a: ['href', 'title'],
+				img: ['src', 'alt', 'title']
+			}
 		})
 	};
 }
