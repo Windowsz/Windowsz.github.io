@@ -35,6 +35,13 @@
 		{ value: 'climate', label: 'Climate' }
 	];
 
+	type ReaderArticle = {
+		title: string;
+		byline: string | null;
+		siteName: string | null;
+		contentHtml: string;
+	};
+
 	const PAGE_SIZE = 20;
 
 	let items = $state<NewsItem[]>([]);
@@ -47,8 +54,19 @@
 	// Some sources block hotlinking, so an imageUrl existing doesn't guarantee it loads —
 	// fall back to the placeholder box instead of leaving a blank gap.
 	let brokenImages = $state(new Set<string>());
+	// "Reader mode" full-article fetch for the quick-view dialog — separate from the
+	// dialog just being open, since it loads a moment after and can fail independently
+	// (paywalls, anti-bot pages, unusual markup), in which case we fall back to the
+	// RSS/Reddit summary that's already on hand.
+	let readerStatus = $state<'loading' | 'ready' | 'error'>('loading');
+	let readerArticle = $state<ReaderArticle | null>(null);
 
 	const apiUrl = env.PUBLIC_API_BASE || '/api/news';
+
+	function getReaderEndpoint(articleUrl: string): string {
+		const origin = apiUrl.startsWith('http') ? new URL(apiUrl).origin : window.location.origin;
+		return `${origin}/api/read?url=${encodeURIComponent(articleUrl)}`;
+	}
 
 	onMount(async () => {
 		try {
@@ -91,7 +109,25 @@
 
 	function openQuickView(item: NewsItem) {
 		activeItem = item;
+		readerStatus = 'loading';
+		readerArticle = null;
 		dialogEl.showModal();
+
+		fetch(getReaderEndpoint(item.url), { signal: AbortSignal.timeout(15000) })
+			.then((res) => {
+				if (!res.ok) throw new Error(`${res.status}`);
+				return res.json();
+			})
+			.then((article) => {
+				// Ignore late results from a dialog the user has since navigated away from.
+				if (activeItem?.url !== item.url) return;
+				readerArticle = article;
+				readerStatus = 'ready';
+			})
+			.catch(() => {
+				if (activeItem?.url !== item.url) return;
+				readerStatus = 'error';
+			});
 	}
 
 	function formatTime(iso: string) {
@@ -211,7 +247,7 @@
 <dialog
 	bind:this={dialogEl}
 	onclose={() => (activeItem = null)}
-	class="w-full max-w-lg rounded-xl border border-white/10 bg-neutral-900/70 p-0 text-white shadow-2xl backdrop-blur-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+	class="m-auto w-full max-w-xl rounded-xl border border-white/10 bg-neutral-900/70 p-0 text-white shadow-2xl backdrop-blur-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
 >
 	{#if activeItem}
 		<div class="relative">
@@ -241,14 +277,52 @@
 				/>
 			{/if}
 
-			<div class="p-5">
+			<div class="max-h-[65vh] overflow-y-auto p-5">
 				<p class="mb-1 text-xs text-white/50">
 					{activeItem.source} · {formatTime(activeItem.publishedAt)}
 				</p>
-				<h2 class="mb-3 text-lg font-semibold">{activeItem.title}</h2>
-				<p class="mb-4 text-sm text-white/70">
-					{activeItem.summary ?? 'No preview available for this article.'}
-				</p>
+				<h2 class="mb-1 text-lg font-semibold">{activeItem.title}</h2>
+				{#if readerStatus === 'ready' && readerArticle?.byline}
+					<p class="mb-3 text-xs text-white/40">{readerArticle.byline}</p>
+				{:else}
+					<div class="mb-3"></div>
+				{/if}
+
+				{#if readerStatus === 'loading'}
+					<div class="mb-4 flex items-center gap-2 text-sm text-white/50">
+						<svg
+							class="h-4 w-4 animate-spin"
+							xmlns="http://www.w3.org/2000/svg"
+							viewBox="0 0 24 24"
+							fill="none"
+						>
+							<circle
+								cx="12"
+								cy="12"
+								r="9"
+								stroke="currentColor"
+								stroke-width="2.5"
+								opacity="0.25"
+							/>
+							<path
+								d="M21 12a9 9 0 0 0-9-9"
+								stroke="currentColor"
+								stroke-width="2.5"
+								stroke-linecap="round"
+							/>
+						</svg>
+						Loading full article…
+					</div>
+				{:else if readerStatus === 'ready' && readerArticle}
+					<div class="prose prose-invert prose-sm mb-4 max-w-none">
+						{@html readerArticle.contentHtml}
+					</div>
+				{:else}
+					<p class="mb-4 text-sm text-white/70">
+						{activeItem.summary ?? 'No preview available for this article.'}
+					</p>
+				{/if}
+
 				<a
 					href={activeItem.url}
 					target="_blank"
