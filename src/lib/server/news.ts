@@ -12,6 +12,8 @@ export type NewsItem = {
 	publishedAt: string; // ISO timestamp
 	category: 'rss' | 'reddit' | 'hackernews';
 	topic: Topic;
+	imageUrl?: string;
+	summary?: string;
 };
 
 const RSS_FEEDS: { name: string; url: string; topic: Topic }[] = [
@@ -96,7 +98,47 @@ const REDDIT_SOURCES: { subreddit: string; topic: Topic }[] = [
 // outbound request well under typical serverless function time limits.
 const REQUEST_TIMEOUT_MS = 5000;
 
-const parser = new Parser({ timeout: REQUEST_TIMEOUT_MS });
+const parser = new Parser({
+	timeout: REQUEST_TIMEOUT_MS,
+	customFields: {
+		item: [
+			['media:content', 'mediaContent', { keepArray: true }],
+			['media:thumbnail', 'mediaThumbnail']
+		]
+	}
+});
+
+const MAX_SUMMARY_LENGTH = 220;
+
+function truncate(text: string | undefined, maxLength: number): string | undefined {
+	const trimmed = text?.replace(/\s+/g, ' ').trim();
+	if (!trimmed) return undefined;
+	return trimmed.length > maxLength ? `${trimmed.slice(0, maxLength - 1)}…` : trimmed;
+}
+
+// RSS feeds expose article images in several inconsistent, non-standard ways —
+// try each in turn rather than assuming one format.
+function extractRssImage(item: {
+	enclosure?: { url?: string; type?: string };
+	mediaThumbnail?: { $?: { url?: string } };
+	mediaContent?: { $?: { url?: string; medium?: string } }[];
+	content?: string;
+	['content:encoded']?: string;
+}): string | undefined {
+	if (item.enclosure?.url && (!item.enclosure.type || item.enclosure.type.startsWith('image'))) {
+		return item.enclosure.url;
+	}
+	if (item.mediaThumbnail?.$?.url) return item.mediaThumbnail.$.url;
+
+	const mediaImage = item.mediaContent?.find(
+		(media) => !media.$?.medium || media.$.medium === 'image'
+	);
+	if (mediaImage?.$?.url) return mediaImage.$.url;
+
+	const html = item['content:encoded'] ?? item.content;
+	const match = html?.match(/<img[^>]+src="([^">]+)"/i);
+	return match?.[1];
+}
 
 async function fetchRss(): Promise<NewsItem[]> {
 	const results = await Promise.allSettled(
@@ -109,7 +151,9 @@ async function fetchRss(): Promise<NewsItem[]> {
 					url: item.link ?? feed.url,
 					publishedAt: item.isoDate ?? item.pubDate ?? new Date().toISOString(),
 					category: 'rss',
-					topic: feed.topic
+					topic: feed.topic,
+					imageUrl: extractRssImage(item),
+					summary: truncate(item.contentSnippet ?? item.summary, MAX_SUMMARY_LENGTH)
 				})
 			);
 		})
@@ -130,17 +174,38 @@ async function fetchReddit(): Promise<NewsItem[]> {
 			const json = await res.json();
 			return (json.data?.children ?? []).map(
 				(child: {
-					data: { title: string; url: string; permalink: string; created_utc: number };
-				}): NewsItem => ({
-					source: `Reddit r/${subreddit}`,
-					title: child.data.title,
-					url: child.data.url?.startsWith('http')
-						? child.data.url
-						: `https://reddit.com${child.data.permalink}`,
-					publishedAt: new Date(child.data.created_utc * 1000).toISOString(),
-					category: 'reddit',
-					topic
-				})
+					data: {
+						title: string;
+						url: string;
+						permalink: string;
+						created_utc: number;
+						thumbnail?: string;
+						selftext?: string;
+						preview?: { images?: { source?: { url?: string } }[] };
+					};
+				}): NewsItem => {
+					const previewImage = child.data.preview?.images?.[0]?.source?.url;
+					const thumbnail = child.data.thumbnail;
+					const hasUsableThumbnail = thumbnail?.startsWith('http');
+
+					return {
+						source: `Reddit r/${subreddit}`,
+						title: child.data.title,
+						url: child.data.url?.startsWith('http')
+							? child.data.url
+							: `https://reddit.com${child.data.permalink}`,
+						publishedAt: new Date(child.data.created_utc * 1000).toISOString(),
+						category: 'reddit',
+						topic,
+						// Reddit HTML-escapes preview URLs (&amp; etc).
+						imageUrl: previewImage
+							? previewImage.replace(/&amp;/g, '&')
+							: hasUsableThumbnail
+								? thumbnail
+								: undefined,
+						summary: truncate(child.data.selftext, MAX_SUMMARY_LENGTH)
+					};
+				}
 			);
 		})
 	);

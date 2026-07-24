@@ -18,12 +18,8 @@ browser fetches live data from Vercel every time someone opens the page.
 | ----------------------------------- | ------------------------------------------------ |
 | Nav links (add/remove/rename)       | `src/routes/+layout.svelte`                       |
 | Home page hero (video, quote)       | `src/routes/+page.svelte`, `static/bg.mp4`        |
-| About text                          | `src/routes/about/+page.svelte`                   |
-| Projects list                       | `src/routes/projects/+page.svelte`                |
-| Blog                                | `src/routes/blog/+page.svelte` (placeholder for now) |
-| Links / socials                     | `src/routes/links/+page.svelte`                   |
-| Which RSS feeds show up in News     | `src/lib/server/news.ts` (`RSS_FEEDS` array)       |
-| News page layout                    | `src/routes/news/+page.svelte`                     |
+| Which RSS/Reddit sources show up    | `src/lib/server/news.ts` (`RSS_FEEDS`/`REDDIT_SOURCES`) |
+| News page layout, cards, dialog, infinite scroll | `src/routes/news/+page.svelte`       |
 | Colors / global theme               | `src/app.css`                                      |
 | GitHub Pages deploy steps           | `.github/workflows/deploy-site.yml`                |
 
