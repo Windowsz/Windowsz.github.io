@@ -5,7 +5,7 @@
 	without needing to be rebuilt every time.
 -->
 <script lang="ts">
-	import { PUBLIC_API_BASE } from '$env/static/public';
+	import { env } from '$env/dynamic/public';
 	import { onMount } from 'svelte';
 
 	type Topic = 'geopolitics' | 'economy' | 'tech' | 'climate' | 'thailand' | 'dev';
@@ -34,7 +34,7 @@
 	let activeTopic = $state<Topic | 'all'>('all');
 	let query = $state('');
 
-	const apiUrl = PUBLIC_API_BASE || '/api/news';
+	const apiUrl = env.PUBLIC_API_BASE || '/api/news';
 
 	onMount(async () => {
 		try {
