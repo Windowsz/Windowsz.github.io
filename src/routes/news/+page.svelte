@@ -9,6 +9,7 @@
 	network requests happen while scrolling.
 -->
 <script lang="ts">
+	import { glowHover } from '$lib/actions/glowHover';
 	import { env } from '$env/dynamic/public';
 	import { onMount } from 'svelte';
 
@@ -167,7 +168,20 @@
 	</div>
 
 	{#if status === 'loading'}
-		<p class="text-white/60">Loading news…</p>
+		<ul class="space-y-3">
+			{#each Array(6) as _, i (i)}
+				<li
+					class="flex gap-3 rounded-lg border border-white/10 bg-white/5 p-4 shadow-lg backdrop-blur-xl"
+				>
+					<div class="h-16 w-16 shrink-0 animate-pulse rounded-md bg-white/10"></div>
+					<div class="flex-1 space-y-2 py-1">
+						<div class="h-4 w-3/4 animate-pulse rounded bg-white/10"></div>
+						<div class="h-4 w-1/2 animate-pulse rounded bg-white/10"></div>
+						<div class="h-3 w-1/3 animate-pulse rounded bg-white/10"></div>
+					</div>
+				</li>
+			{/each}
+		</ul>
 	{:else if status === 'error'}
 		<p class="text-red-400">Couldn't load news right now. Try again later.</p>
 	{:else if filtered.length === 0}
@@ -176,7 +190,8 @@
 		<ul class="space-y-3">
 			{#each visibleItems as item (item.url)}
 				<li
-					class="relative flex gap-3 rounded-lg border border-white/10 bg-white/5 p-4 pr-12 shadow-lg backdrop-blur-xl"
+					use:glowHover
+					class="relative flex gap-3 overflow-hidden rounded-lg border border-white/10 bg-white/5 p-4 pr-12 shadow-lg backdrop-blur-xl"
 				>
 					{#if item.imageUrl && !brokenImages.has(item.url)}
 						<img
@@ -252,8 +267,14 @@
 
 <dialog
 	bind:this={dialogEl}
+	use:glowHover
 	onclose={() => (activeItem = null)}
-	class="m-auto w-full max-w-xl rounded-xl border border-white/10 bg-neutral-900/70 p-0 text-white shadow-2xl backdrop-blur-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+	onclick={(e) => {
+		// A click that lands on the <dialog> element itself (not anything inside it)
+		// is a click on the backdrop — close, the same way most modals behave.
+		if (e.target === dialogEl) dialogEl.close();
+	}}
+	class="m-auto w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-neutral-900/70 p-0 text-white shadow-2xl backdrop-blur-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
 >
 	{#if activeItem}
 		<div class="relative">
@@ -295,29 +316,13 @@
 				{/if}
 
 				{#if readerStatus === 'loading'}
-					<div class="mb-4 flex items-center gap-2 text-sm text-white/50">
-						<svg
-							class="h-4 w-4 animate-spin"
-							xmlns="http://www.w3.org/2000/svg"
-							viewBox="0 0 24 24"
-							fill="none"
-						>
-							<circle
-								cx="12"
-								cy="12"
-								r="9"
-								stroke="currentColor"
-								stroke-width="2.5"
-								opacity="0.25"
-							/>
-							<path
-								d="M21 12a9 9 0 0 0-9-9"
-								stroke="currentColor"
-								stroke-width="2.5"
-								stroke-linecap="round"
-							/>
-						</svg>
-						Loading full article…
+					<div class="mb-4 space-y-2">
+						<div class="h-3 w-full animate-pulse rounded bg-white/10"></div>
+						<div class="h-3 w-11/12 animate-pulse rounded bg-white/10"></div>
+						<div class="h-3 w-full animate-pulse rounded bg-white/10"></div>
+						<div class="h-3 w-4/5 animate-pulse rounded bg-white/10"></div>
+						<div class="h-3 w-full animate-pulse rounded bg-white/10"></div>
+						<div class="h-3 w-2/3 animate-pulse rounded bg-white/10"></div>
 					</div>
 				{:else if readerStatus === 'ready' && readerArticle}
 					<div class="prose prose-invert prose-sm mb-4 max-w-none">

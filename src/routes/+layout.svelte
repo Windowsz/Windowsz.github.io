@@ -1,5 +1,6 @@
 <script lang="ts">
 	// Nav links shown on every page. Add/remove/rename links here.
+	import { glowHover } from '$lib/actions/glowHover';
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
 	import { page } from '$app/state';
@@ -33,7 +34,8 @@
 
 <div class="flex min-h-screen flex-col">
 	<header
-		class="fixed top-0 z-20 w-full border-b border-white/10 bg-white/5 backdrop-blur-xl"
+		use:glowHover
+		class="fixed top-0 z-20 w-full overflow-hidden border-b border-white/10 bg-white/5 backdrop-blur-xl"
 	>
 		<nav class="mx-auto flex max-w-4xl justify-center gap-2 px-4 py-3">
 			{#each links as link (link.href)}
