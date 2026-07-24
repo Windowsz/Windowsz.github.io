@@ -7,6 +7,10 @@ import { json } from '@sveltejs/kit';
 // Must stay dynamic (not prerendered) — it fetches live data on every request.
 export const prerender = false;
 
+// Safety margin above the ~10s worst case of news.ts's per-request timeouts,
+// in case Vercel's function needs longer than the platform default one day.
+export const config = { maxDuration: 20 };
+
 export async function GET() {
 	const items = await getAllNews();
 
