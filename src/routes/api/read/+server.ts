@@ -6,26 +6,32 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 export const prerender = false;
-export const config = { maxDuration: 15 };
+// Bumped memory (Vercel default is 1024MB already on most plans, but this makes
+// it explicit) since parsing a full news page's DOM can be memory-hungry — a
+// 500 with no CORS header at all (rather than our own handled JSON response)
+// is the signature of the whole function crashing/OOMing, not a normal error.
+export const config = { maxDuration: 15, memory: 1024 };
 
 const CORS_HEADERS = { 'Access-Control-Allow-Origin': '*' };
 
 export const GET: RequestHandler = async ({ url }) => {
-	const target = url.searchParams.get('url');
-	if (!target) {
-		return json({ error: 'Missing url parameter' }, { status: 400, headers: CORS_HEADERS });
-	}
-
+	// Everything is wrapped, deliberately — any throw in here must still come
+	// back as JSON+CORS, never as a bare crash the browser can't even read.
 	try {
-		const parsed = new URL(target);
-		if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-			throw new Error('Unsupported protocol');
+		const target = url.searchParams.get('url');
+		if (!target) {
+			return json({ error: 'Missing url parameter' }, { status: 400, headers: CORS_HEADERS });
 		}
-	} catch {
-		return json({ error: 'Invalid url' }, { status: 400, headers: CORS_HEADERS });
-	}
 
-	try {
+		try {
+			const parsed = new URL(target);
+			if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+				throw new Error('Unsupported protocol');
+			}
+		} catch {
+			return json({ error: 'Invalid url' }, { status: 400, headers: CORS_HEADERS });
+		}
+
 		const article = await extractArticle(target);
 		return json(article, {
 			headers: {
