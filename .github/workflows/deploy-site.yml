@@ -9,8 +9,8 @@ name: Deploy static site to GitHub Pages
 # "GitHub Actions" (it currently defaults to "Deploy from a branch").
 #
 # Optional: set a repository variable named PUBLIC_API_BASE (Settings -> Secrets and
-# variables -> Actions -> Variables) to your Vercel app's /api/news URL once it exists,
-# e.g. https://your-app.vercel.app/api/news. Until then the News page will just fail
+# variables -> Actions -> Variables) to your Vercel app's domain once it exists (no
+# path), e.g. https://your-app.vercel.app. Until then the News page will just fail
 # to load news (everything else works fine).
 
 on:
