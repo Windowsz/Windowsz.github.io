@@ -1,6 +1,6 @@
 // Live news API. Only exists on the Vercel build — the GitHub Pages static build
 // skips this route (see BUILD_TARGET check in vite.config.ts) and instead fetches
-// this same endpoint's Vercel URL from the browser (see PUBLIC_API_BASE in .env).
+// this same endpoint on the Vercel domain from the browser (see PUBLIC_API_BASE in .env).
 import { getAllNews } from '$lib/server/news';
 import { json } from '@sveltejs/kit';
 

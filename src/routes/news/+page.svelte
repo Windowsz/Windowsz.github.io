@@ -1,7 +1,7 @@
 <!--
 	News page. Data is NOT fetched at build time — it's fetched by the browser after the
-	page loads (see onMount below), from whichever API the PUBLIC_API_BASE env var points to
-	(see .env.example). This is what lets the static GitHub Pages build show live news
+	page loads (see onMount below), from whichever domain the PUBLIC_API_BASE env var points
+	to (see .env.example). This is what lets the static GitHub Pages build show live news
 	without needing to be rebuilt every time.
 
 	Everything below (cards, dialog, infinite scroll) works off the one full list fetched
@@ -61,16 +61,22 @@
 	let readerStatus = $state<'loading' | 'ready' | 'error'>('loading');
 	let readerArticle = $state<ReaderArticle | null>(null);
 
-	const apiUrl = env.PUBLIC_API_BASE || '/api/news';
+	// PUBLIC_API_BASE is just the Vercel deployment's domain (e.g.
+	// https://your-app.vercel.app) — every API path below is built from it.
+	// Empty on Vercel itself (same-origin calls); set on the GitHub Pages build.
+	const apiBase = env.PUBLIC_API_BASE || '';
+
+	function apiPath(path: string): string {
+		return `${apiBase}${path}`;
+	}
 
 	function getReaderEndpoint(articleUrl: string): string {
-		const origin = apiUrl.startsWith('http') ? new URL(apiUrl).origin : window.location.origin;
-		return `${origin}/api/read?url=${encodeURIComponent(articleUrl)}`;
+		return apiPath(`/api/read?url=${encodeURIComponent(articleUrl)}`);
 	}
 
 	onMount(async () => {
 		try {
-			const res = await fetch(apiUrl, { signal: AbortSignal.timeout(25000) });
+			const res = await fetch(apiPath('/api/news'), { signal: AbortSignal.timeout(25000) });
 			if (!res.ok) throw new Error(`${res.status}`);
 			items = await res.json();
 			status = 'ready';
