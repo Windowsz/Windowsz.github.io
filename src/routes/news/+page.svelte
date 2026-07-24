@@ -107,9 +107,10 @@
 			{#each TOPICS as topic (topic.value)}
 				<button
 					onclick={() => (activeTopic = topic.value)}
-					class="rounded-full border px-3 py-1 text-xs transition {activeTopic === topic.value
+					class="rounded-full border px-3 py-1 text-xs backdrop-blur-md transition {activeTopic ===
+					topic.value
 						? 'border-white bg-white text-neutral-900'
-						: 'border-white/20 text-white/70'}"
+						: 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'}"
 				>
 					{topic.label}
 				</button>
@@ -119,7 +120,7 @@
 			type="search"
 			bind:value={query}
 			placeholder="Search titles…"
-			class="rounded-md border border-white/20 bg-transparent px-3 py-1.5 text-sm placeholder:text-white/40 focus:border-white/50 focus:outline-none"
+			class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm backdrop-blur-md placeholder:text-white/40 focus:border-white/30 focus:outline-none"
 		/>
 	</div>
 
@@ -132,7 +133,9 @@
 	{:else}
 		<ul class="space-y-3">
 			{#each visibleItems as item (item.url)}
-				<li class="relative flex gap-3 rounded-lg border border-white/10 p-4 pr-12">
+				<li
+					class="relative flex gap-3 rounded-lg border border-white/10 bg-white/5 p-4 pr-12 shadow-lg backdrop-blur-xl"
+				>
 					{#if item.imageUrl && !brokenImages.has(item.url)}
 						<img
 							src={item.imageUrl}
@@ -208,7 +211,7 @@
 <dialog
 	bind:this={dialogEl}
 	onclose={() => (activeItem = null)}
-	class="w-full max-w-lg rounded-xl bg-neutral-900 p-0 text-white backdrop:bg-black/60"
+	class="w-full max-w-lg rounded-xl border border-white/10 bg-neutral-900/70 p-0 text-white shadow-2xl backdrop-blur-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
 >
 	{#if activeItem}
 		<div class="relative">
