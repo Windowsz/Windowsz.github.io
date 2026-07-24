@@ -13,6 +13,18 @@ import { parseHTML } from 'linkedom';
 import sanitizeHtml from 'sanitize-html';
 
 const FETCH_TIMEOUT_MS = 8000;
+// Building a full DOM out of a page's <script>/<style> blocks (often megabytes
+// of inline JSON state, analytics, tracking pixels) wastes memory and CPU for
+// content Readability throws away anyway — strip it before parsing, and give
+// up on anything unreasonably large rather than risk the function crashing.
+const MAX_HTML_BYTES = 3_000_000;
+
+function stripNonContentTags(html: string): string {
+	return html
+		.replace(/<script[\s\S]*?<\/script>/gi, '')
+		.replace(/<style[\s\S]*?<\/style>/gi, '')
+		.replace(/<noscript[\s\S]*?<\/noscript>/gi, '');
+}
 
 export type ReaderArticle = {
 	title: string;
@@ -43,7 +55,10 @@ export async function extractArticle(url: string): Promise<ReaderArticle> {
 	});
 	if (!res.ok) throw new Error(`Fetch failed with ${res.status}`);
 
-	const html = await res.text();
+	const rawHtml = await res.text();
+	if (rawHtml.length > MAX_HTML_BYTES) throw new Error('Article HTML too large to parse safely');
+
+	const html = stripNonContentTags(rawHtml);
 	const { document } = parseHTML(withBaseHref(html, url));
 	const article = new Readability(document as unknown as Document).parse();
 
