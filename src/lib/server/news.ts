@@ -190,7 +190,17 @@ export async function getAllNews(): Promise<NewsItem[]> {
 		fetchHackerNews()
 	]);
 
-	return [...rss, ...reddit, ...hackerNews].sort(
+	// Different sources can surface the same article (e.g. a story cross-posted to
+	// multiple subreddits, or picked up by more than one feed) — the News page keys
+	// its list by url, so duplicates must be removed here rather than just visually.
+	const seenUrls = new Set<string>();
+	const deduped = [...rss, ...reddit, ...hackerNews].filter((item) => {
+		if (seenUrls.has(item.url)) return false;
+		seenUrls.add(item.url);
+		return true;
+	});
+
+	return deduped.sort(
 		(a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
 	);
 }
