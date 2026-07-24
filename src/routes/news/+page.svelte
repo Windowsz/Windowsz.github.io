@@ -38,7 +38,7 @@
 
 	onMount(async () => {
 		try {
-			const res = await fetch(apiUrl);
+			const res = await fetch(apiUrl, { signal: AbortSignal.timeout(25000) });
 			if (!res.ok) throw new Error(`${res.status}`);
 			items = await res.json();
 			status = 'ready';

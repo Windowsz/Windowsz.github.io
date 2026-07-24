@@ -92,7 +92,11 @@ const REDDIT_SOURCES: { subreddit: string; topic: Topic }[] = [
 	{ subreddit: 'webdev', topic: 'dev' }
 ];
 
-const parser = new Parser();
+// A slow/unreachable source must never block the whole response — cap every
+// outbound request well under typical serverless function time limits.
+const REQUEST_TIMEOUT_MS = 5000;
+
+const parser = new Parser({ timeout: REQUEST_TIMEOUT_MS });
 
 async function fetchRss(): Promise<NewsItem[]> {
 	const results = await Promise.allSettled(
@@ -117,10 +121,10 @@ async function fetchRss(): Promise<NewsItem[]> {
 async function fetchReddit(): Promise<NewsItem[]> {
 	const results = await Promise.allSettled(
 		REDDIT_SOURCES.map(async ({ subreddit, topic }) => {
-			const res = await fetch(
-				`https://www.reddit.com/r/${subreddit}/top.json?limit=10&t=day`,
-				{ headers: { 'User-Agent': 'windowsz-portal-news/1.0' } }
-			);
+			const res = await fetch(`https://www.reddit.com/r/${subreddit}/top.json?limit=10&t=day`, {
+				headers: { 'User-Agent': 'windowsz-portal-news/1.0' },
+				signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+			});
 			if (!res.ok) return [];
 
 			const json = await res.json();
@@ -146,13 +150,17 @@ async function fetchReddit(): Promise<NewsItem[]> {
 
 async function fetchHackerNews(): Promise<NewsItem[]> {
 	try {
-		const idsRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
+		const idsRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json', {
+			signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+		});
 		if (!idsRes.ok) return [];
 		const ids: number[] = (await idsRes.json()).slice(0, 15);
 
 		const items = await Promise.allSettled(
 			ids.map(async (id) => {
-				const res = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+				const res = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, {
+					signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+				});
 				if (!res.ok) return null;
 				const item = await res.json();
 				if (!item?.title) return null;
