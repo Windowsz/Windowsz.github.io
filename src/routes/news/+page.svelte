@@ -9,6 +9,7 @@
 	network requests happen while scrolling.
 -->
 <script lang="ts">
+	import { glowHover } from '$lib/actions/glowHover';
 	import { env } from '$env/dynamic/public';
 	import { onMount } from 'svelte';
 
@@ -189,7 +190,8 @@
 		<ul class="space-y-3">
 			{#each visibleItems as item (item.url)}
 				<li
-					class="relative flex gap-3 rounded-lg border border-white/10 bg-white/5 p-4 pr-12 shadow-lg backdrop-blur-xl"
+					use:glowHover
+					class="relative flex gap-3 overflow-hidden rounded-lg border border-white/10 bg-white/5 p-4 pr-12 shadow-lg backdrop-blur-xl"
 				>
 					{#if item.imageUrl && !brokenImages.has(item.url)}
 						<img
@@ -265,13 +267,14 @@
 
 <dialog
 	bind:this={dialogEl}
+	use:glowHover
 	onclose={() => (activeItem = null)}
 	onclick={(e) => {
 		// A click that lands on the <dialog> element itself (not anything inside it)
 		// is a click on the backdrop — close, the same way most modals behave.
 		if (e.target === dialogEl) dialogEl.close();
 	}}
-	class="m-auto w-full max-w-xl rounded-xl border border-white/10 bg-neutral-900/70 p-0 text-white shadow-2xl backdrop-blur-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+	class="m-auto w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-neutral-900/70 p-0 text-white shadow-2xl backdrop-blur-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
 >
 	{#if activeItem}
 		<div class="relative">
